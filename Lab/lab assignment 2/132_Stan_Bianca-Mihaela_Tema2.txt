@@ -1,0 +1,174 @@
+.data
+	n: .word 6
+	v: .word  -15 -3 0 1 2 5
+	sp: .asciiz " "
+.text
+   main:
+   	lw $t0, n
+   	la $t1, v
+   	
+   	addu $sp, $sp, -4
+   	sw $t0, 0($sp) #sp:(n)
+   	addu $sp, $sp, -4
+   	sw $t1, 0($sp)#sp:(v*)(n)
+   	
+   	jal modifica
+   	addu $sp, $sp, 8
+   	
+	li $t2, 0#t2 este contorul i
+	li $t1, 0#t1 este incrementat din 4 in 4
+   	j afisare
+   	li $v0, 10
+   	syscall
+   	
+   	
+   afisare:	
+   	bge $t2, $t0, exit#daca i>=n am afisat tot vectorul si merg la exit
+   		lw $a0, v($t1)
+   		li $v0, 1
+   		syscall
+   		
+   		la $a0, sp
+   		li $v0, 4
+   		syscall
+   		
+   		j cont
+   cont:
+   	addi $t2, $t2, 1
+   	addi $t1, $t1, 4
+   	j afisare
+   exit:
+   	li $v0, 10
+   	syscall
+   modifica:
+   	#functia modifica modifica v[i], dupa care muta registrul $s0 astfel incat acesta sa contina adersa de inceput a urmatorului
+	#element din vector si apeleaza modifica(v+1, n)
+   	addu $sp, $sp, -4
+   	lw $fp, 0($sp)
+   	addu $fp, $sp, 4
+   	
+   	#sp:(fp v)fp:(*v)(n)
+   	
+   	addu $sp, $sp, -4
+   	sw $ra, 0($sp)
+   	
+   	#sp:($ra v)($fp v)fp:(*v)(n)
+   	
+   	addu $sp, $sp, -4
+   	sw $s0, 0($sp)
+   	lw $s0, 0($fp)#$s0=v*
+   	
+   	#sp:($s0 v)($ra v)($fp v)fp:(*v)(n)
+   	
+   	addu $sp, $sp, -4
+   	sw $s2, 0($sp)
+   	lw $s2, 4($fp)#$s2=n
+   	
+   	#sp:($s2 v)($s0 v)($ra v)($fp v)fp:(*v)(n)
+   	
+   	addu $sp, $sp, -4
+   	sw $s1, 0($sp)
+   	lw $s1, 0($s0)#$s1=v*[0]
+   	
+   	#sp:($s1 v)($s2 v)($s0 v)($ra v)($fp v)fp:(*v)(n)
+   	
+   	addu $sp, $sp, -4
+   	sw $s1, 0($sp)
+   	
+   	#sp:($s1)($s1 v)($s2 v)($s0 v)($ra v)($fp v)fp:(*v)(n)
+   	
+   	li $v0, 0
+   	jal suma_patrate
+   	addu $sp, $sp, 4
+   	lw $s1, -20($fp)
+   	addu $sp, $sp, 4
+   	
+   	#sp:($s2 v)($s0 v)($ra v)($fp v)fp:(*v)(n)
+   	
+   	sw $v0, 0($s0)#am modificat valoarea in vector
+   	
+
+   	addi $s2, $s2, -1#$s2=n-1
+   	beq $s2, $zero, intoarcere #daca nu mai exista elemente dupa elementul curent ne intoarcem
+   	
+   	addi $s0, $s0, 4#s0=(v+1)*
+   	addu $sp, $sp, -4
+   	sw $s2, 0($sp)
+   	
+   	#sp:($s2)($s2 v)($s0 v)($ra v)($fp v)fp:(*v)(n)
+   	
+   	addu $sp, $sp, -4
+   	sw $s0, 0($sp)
+   	
+   	#sp:($s0)($s2)($s2 v)($s0 v)($ra v)($fp v)fp:(*v)(n)
+
+   	jal modifica
+   	
+   	addu $sp, $sp, 8
+   
+   	
+   intoarcere:
+   	
+   	lw $s2, -16($fp)
+   	lw $s0, -12($fp)
+   	lw $ra, -8($fp)
+   	lw $fp, -4($fp)
+   	addu $sp, $sp, 16
+   	
+   	jr $ra
+   suma_patrate:
+   	#suma_patrate(x)=(x-1)^2+suma_patrate(x-1), daca x>1
+   	#                 0, daca x<=1
+   	addu $sp, $sp, -4#adaug fp
+   	sw $fp, 0($sp)
+   	addi $fp, $sp, 4
+   	
+   	#sp:($fp v)fp:(x)
+
+	addu $sp, $sp, -4#adaug ra
+	sw $ra, 0($sp)
+	
+	#sp:($ra v)($fp v)fp:(x)
+	
+	addu $sp, $sp, -4
+	sw $s0, 0($sp)
+	lw $s0, 0($fp)#$s0=x
+	
+	#sp:($s0 v)($ra v)($fp v)fp:(x)
+	
+	addi $s0, $s0, -1
+	
+	#$s0=x-1
+
+	addu $sp, $sp, -4
+	sw $s1, 0($sp)
+	lw $s1, 0($fp)#$s1=x
+	#sp:($s1 v)($s0 v)($ra v)($fp v)fp:(x)
+	ble $s1, 1, intoarcere_sume#daca x<=1, suma_patrate(x)=0
+	
+	mul $s0, $s0, $s0 #$s0=(x-1)^2
+	addu $v0, $v0, $s0#$v0=$v0+(x-1)^2
+	
+	addi $s1, $s1, -1#$s1=x-1
+	addu $sp, $sp, -4
+	sw $s1, 0($sp)
+	
+	#sp:($s1)($s1 v)($s0 v)($ra v)($fp v)fp:(x)
+	
+	jal suma_patrate
+	
+	addu $sp, $sp, 4
+
+   intoarcere_sume:
+   
+   	lw $s1, -16($fp)
+   	lw $s0, -12($fp)
+	lw $ra, -8($fp)
+	lw $fp, -4($fp)
+	addu $sp, $sp, 16
+	jr $ra
+   	
+	
+   	   	
+   	
+   	
