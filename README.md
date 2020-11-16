@@ -1,4 +1,6 @@
-# Computer-Architecture---Dragulici Dumitru
+# Computer-Architecture
+
+This course was taught by Dragulici Dumitru and Macovei Bogdan (lab).
 
 useful links: https://github.com/DLarisa/FMI-Materials/tree/master/ASC (tutoriat 2019-2020)
 
